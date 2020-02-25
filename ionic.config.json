@@ -1,5 +1,7 @@
 {
   "name": "places-ion",
-  "integrations": {},
+  "integrations": {
+    "capacitor": {}
+  },
   "type": "angular"
 }
