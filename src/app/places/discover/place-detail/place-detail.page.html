@@ -1,6 +1,6 @@
 <ion-header>
   <ion-toolbar>
-    <ion-title>place-detail</ion-title>
+    <ion-title>{{place.title}}</ion-title>
     <ion-buttons slot="start">
       <ion-back-button defaultHref="/places/tabs/discover"></ion-back-button>
     </ion-buttons>
@@ -8,5 +8,8 @@
 </ion-header>
 
 <ion-content>
+  <ion-button (click)="openBookModal()">
+    Book
+  </ion-button>
 
 </ion-content>

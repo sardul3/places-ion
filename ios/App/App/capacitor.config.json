@@ -1,5 +1,5 @@
 {
-  "appId": "io.ionic.placesIon",
+  "appId": "placesIon",
   "appName": "places-ion",
   "bundledWebRuntime": false,
   "npmClient": "npm",
