@@ -17,15 +17,11 @@
           <ion-list>
               <!-- #<name> is angular template reference -->
               <ion-item-sliding *ngFor="let place of places" #slidingItem>
-                  <ion-item 
-                  [routerLink] = "['/', 'places', 'tabs', 'offers', place.id]"
-                  >
-                  <ion-thumbnail slot="start">
-                    <img [src] = "place.imageUrl" />
-                  </ion-thumbnail>
-                  <ion-label>{{place.title}}</ion-label>
-                </ion-item>
         
+                <!-- Dividing a section into a separate component-->
+                <!-- Component must be added to the Page Module file under declarations-->
+                <app-offer-item [place]="place"></app-offer-item>
+
                 <ion-item-options>
                   <!-- routerLink doesn't close the button when coming back from edit page, so click listener is a better option -->
                   <ion-item-option color="secondary" (click)="onEditOffer(place.id, slidingItem)">
