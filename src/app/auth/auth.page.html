@@ -1,12 +1,60 @@
 <ion-header>
   <ion-toolbar>
-    <ion-title>auth</ion-title>
+    <ion-title>{{!isLogIn ? 'Sign Up' : 'Log In'}}</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content>
-  <ion-button (click)="onLogIn()">
-    Log In
-  </ion-button>
+<ion-content padding>
+<form #f="ngForm" (ngSubmit)="onLogInFormSubmit(f)">
+  <ion-grid>
+    <ion-row>
+      <ion-col size-sm="6" offset-sm="3" size-lg="4" offset-lg="4">
+          <ion-list>
+              <ion-item>
+                <ion-label position="floating">Email</ion-label>
+                <ion-input type="email" ngModel name="email" required email #emailControl="ngModel"></ion-input>
+              </ion-item>
+          
+              <!-- 
+                Display a message if email is invalid;
+                uses ngModel directive to validate the conditions
+              -->
+              <ion-item *ngIf="!emailControl.valid && emailControl.touched">
+                <ion-label>
+                  Please enter a valid email
+                </ion-label>
+              </ion-item>
 
+              <ion-item>
+                <ion-label position="floating">Password</ion-label>
+                <ion-input type="password" name="password" ngModel required minlength="6" #passwordControl="ngModel"></ion-input>
+              </ion-item>
+
+              <ion-item *ngIf="!passwordControl.valid && passwordControl.touched">
+                <ion-label>
+                  Password must be at least 6 character long
+                </ion-label>
+              </ion-item>
+
+
+            </ion-list>          
+      </ion-col>
+    </ion-row>
+
+    <ion-row>
+      <ion-col size-sm="6" offset-sm="3" size-lg="4" offset-lg="4">
+          <ion-button type="submit" (click)="onLogIn()" expand="block"
+                      [disabled]="!f.valid">
+                      {{!isLogIn ? 'Sign up' : 'Log In'}}
+          </ion-button>
+          
+          <ion-button type="button" expand="block" fill="clear"
+                      (click)="switchAuthMode()">
+            Switch to {{isLogIn ? 'Sign up' : 'Log In'}}
+          </ion-button>          
+      </ion-col>
+    </ion-row>
+  </ion-grid>
+</form>
+  
 </ion-content>
