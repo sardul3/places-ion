@@ -29,11 +29,13 @@ export class PlaceDetailPage implements OnInit {
     });
   }
 
-  openBookModal(actionType: string) {
+  openBookModal(mode: 'select' | 'random') {
     this.modalController.create({
       component: CreateBookingComponent,
-      componentProps: {selectedPlace: this.place}
-    }).then(modal => {modal.present(); });
+      componentProps: {selectedPlace: this.place, selectedMode: mode}
+    }).then(modal => {modal.present(); return modal.onDidDismiss(); }).then(resultData => {
+      console.log(resultData);
+    });
   }
 
   onBookClicked() {
