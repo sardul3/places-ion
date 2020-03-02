@@ -1,5 +1,9 @@
+import { AuthService } from './../../../auth/auth.service';
+import { PlacesService } from './../../places.service';
 import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormControl, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
+import { LoadingController } from '@ionic/angular';
 
 @Component({
   selector: 'app-new-offer',
@@ -9,7 +13,10 @@ import { FormGroup, FormControl, Validators } from '@angular/forms';
 export class NewOfferPage implements OnInit {
   form: FormGroup;
 
-  constructor() { }
+  constructor(private placesService: PlacesService,
+              private authService: AuthService,
+              private router: Router,
+              private loadingController: LoadingController) { }
 
   ngOnInit() {
     this.form = new FormGroup({
@@ -40,8 +47,33 @@ export class NewOfferPage implements OnInit {
     if (!this.form.valid) {
       return;
     }
-    console.log('new offer created');
-    console.log(this.form);
+
+    const loading = this.loadingController.create({
+      message: 'please wait..',
+      duration: 2000
+    }).then(loadingEl => loadingEl.present()
+    );
+
+    setTimeout(() => {
+      this.placesService.addPlace(
+        this.form.value.title,
+        this.form.value.description,
+        +this.form.value.price,
+        new Date(this.form.value.dateFrom),
+        new Date(this.form.value.dateTo),
+        this.authService.getUserId()
+      );
+      this.form.reset();
+      this.router.navigateByUrl('/places/tabs/offers');
+  
+    }, 2000);
   }
+
+  datesValid() {
+    const start = new Date(this.form.value.dateFrom);
+    const end = new Date(this.form.value.dateTo);
+    return end > start;
+  }
+
 
 }

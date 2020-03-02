@@ -1,3 +1,4 @@
+import { BookingsService } from './../bookings.service';
 import { Component, OnInit, Input, ViewChild } from '@angular/core';
 import { Place } from 'src/app/places/place.model';
 import { ModalController } from '@ionic/angular';
@@ -15,7 +16,8 @@ export class CreateBookingComponent implements OnInit {
   startDate: Date;
   endDate: Date;
 
-  constructor(private modalController: ModalController) { }
+  constructor(private modalController: ModalController,
+              private bookingsService: BookingsService) { }
 
   ngOnInit() {
     this.startDate = new Date(this.selectedPlace.availableFrom);
@@ -25,6 +27,7 @@ export class CreateBookingComponent implements OnInit {
   onModalClose() {
     this.modalController.dismiss(null, 'cancel');
   }
+
 
   onModalSubmit() {
     if (!this.form.valid || !this.datesValid()) {
@@ -37,8 +40,8 @@ export class CreateBookingComponent implements OnInit {
           firstName: this.form.value['first-name'],
           lastName: this.form.value['last-name'],
           guestNumber: this.form.value['guest-number'],
-          dateFrom: this.form.value['date-from'],
-          dateTo: this.form.value['date-to']
+          dateFrom: new Date(this.form.value['date-from']),
+          dateTo: new Date(this.form.value['date-to'])
         }
       }, 'confirm'
     );

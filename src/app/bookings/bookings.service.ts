@@ -1,23 +1,39 @@
+import { AuthService } from './../auth/auth.service';
 import { Injectable } from '@angular/core';
 import { Booking } from './booking.model';
+import { BehaviorSubject } from 'rxjs';
+import {take, map, delay, tap} from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
 })
 export class BookingsService {
-  private bookings: Booking[] = [
-    {id: 'b1', placeId: 'p1', userId: 'u3', placeTitle: 'Paris', guestNumber: 4},
-    {id: 'b2', placeId: 'p2', userId: 'u3', placeTitle: 'Dallas', guestNumber: 2},
-    {id: 'b3', placeId: 'p3', userId: 'u3', placeTitle: 'Rome', guestNumber: 3}
-  ]
+  private bookings = new BehaviorSubject<Booking[]>([]);
 
-  constructor() { }
+  constructor(private authService: AuthService) { }
 
   getBookings() {
-    return [...this.bookings];
+    return this.bookings.asObservable();
   }
 
   deleteBooking(bookingId: string) {
-    return [...this.bookings.filter( booking => booking.id === bookingId)];
+    return this.bookings.pipe(take(1), delay(1500), tap(bookings => {
+      this.bookings.next(bookings.filter(b => b.id !== bookingId));
+    }));
+
+  }
+
+  addBooking(placeId: string, placeTitle: string,
+             placeImage: string, firstName: string,
+             lastName: string, guestNumber: number,
+             dateFrom: Date, dateTo: Date) {
+                const newBooking = new Booking(Math.random.toString(), placeId, this.authService.getUserId(),
+                                    placeTitle, placeImage, firstName, lastName, guestNumber, dateFrom, dateTo);
+                return this.bookings.pipe(take(1), delay(1500), tap(bookings => {
+                  this.bookings.next(bookings.concat(newBooking));
+                }));
+  }
+
+  cancelBooking(bookingId: string) {
   }
 }
