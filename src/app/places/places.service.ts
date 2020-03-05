@@ -1,52 +1,199 @@
-import { Place } from './place.model';
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
-import { take, map, tap, delay } from 'rxjs/operators';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, of } from 'rxjs';
+import { take, map, tap, delay, switchMap } from 'rxjs/operators';
+
+import { Place } from './place.model';
+import { AuthService } from '../auth/auth.service';
+
+// [
+//   new Place(
+//     'p1',
+//     'Manhattan Mansion',
+//     'In the heart of New York City.',
+//     'https://lonelyplanetimages.imgix.net/mastheads/GettyImages-538096543_medium.jpg?sharp=10&vib=20&w=1200',
+//     149.99,
+//     new Date('2019-01-01'),
+//     new Date('2019-12-31'),
+//     'abc'
+//   ),
+//   new Place(
+//     'p2',
+//     "L'Amour Toujours",
+//     'A romantic place in Paris!',
+//     'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Paris_Night.jpg/1024px-Paris_Night.jpg',
+//     189.99,
+//     new Date('2019-01-01'),
+//     new Date('2019-12-31'),
+//     'abc'
+//   ),
+//   new Place(
+//     'p3',
+//     'The Foggy Palace',
+//     'Not your average city trip!',
+//     'https://upload.wikimedia.org/wikipedia/commons/0/01/San_Francisco_with_two_bridges_and_the_fog.jpg',
+//     99.99,
+//     new Date('2019-01-01'),
+//     new Date('2019-12-31'),
+//     'abc'
+//   )
+// ]
+
+interface PlaceData {
+  availableFrom: string;
+  availableTo: string;
+  description: string;
+  imageUrl: string;
+  price: number;
+  title: string;
+  userId: string;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class PlacesService {
-  private places =  new BehaviorSubject<Place[]>(
-    [
-      // tslint:disable-next-line: max-line-length
-      new Place('p1', 'Kathmandu', 'Cap of Nepal', 'https://cdn.getyourguide.com/img/tour_img-2980306-146.jpg', 233.99, new Date('2019-01-01'), new Date('2019-03-24'), 'sagar'),
-      // tslint:disable-next-line: max-line-length
-      new Place('p2', 'Pokhara', 'Nature city of Nepal', 'https://cdn.getyourguide.com/img/tour_img-2246117-148.jpg', 333.99, new Date('2020-02-11'), new Date('2020-03-14'), 'poudel'),
-      // tslint:disable-next-line: max-line-length
-      new Place('p3', 'Manang', 'Nature city of Nepal', 'https://images.squarespace-cdn.com/content/v1/5a87961cbe42d637c54cab93/1524449741682-TFJV2O92DIUYFK58MEYF/ke17ZwdGBToddI8pDm48kNCH0IFo-E28D0rm_d_wnF4UqsxRUqqbr1mOJYKfIPR7LoDQ9mXPOjoJoqy81S2I8N_N4V1vUb5AoIIIbLZhVYxCRW4BPu10St3TBAUQYVKczdH3qUBwO6oWXP_OkYMa5KbLFw5Om5Yp_Nt25Y6nc5ZZuUUY1FOqARMqv9i1pcqr/annapurna+circuit+trekking+%7C+manang+%7C+marshyangdi+valley+%7C+acclimatization+in+manang+%7C+part+3+%7C+laidback+trip?format=1500w', 163.99, new Date('2019-05-01'), new Date('2019-08-04'), 'sagar'),
-    ]
-  );
+  private _places = new BehaviorSubject<Place[]>([]);
 
-  constructor() { }
+  get places() {
+    return this._places.asObservable();
+  }
 
-  getPlaces() {
-    return this.places.asObservable();
+  constructor(private authService: AuthService, private http: HttpClient) {}
+
+  fetchPlaces() {
+    return this.http
+      .get<{ [key: string]: PlaceData }>(
+        'https://places-ion.firebaseio.com/offers.json'
+      )
+      .pipe(
+        map(resData => {
+          const places = [];
+          for (const key in resData) {
+            if (resData.hasOwnProperty(key)) {
+              places.push(
+                new Place(
+                  key,
+                  resData[key].title,
+                  resData[key].description,
+                  resData[key].imageUrl,
+                  resData[key].price,
+                  new Date(resData[key].availableFrom),
+                  new Date(resData[key].availableTo),
+                  resData[key].userId
+                )
+              );
+            }
+          }
+          return places;
+          // return [];
+        }),
+        tap(places => {
+          this._places.next(places);
+        })
+      );
   }
 
   getPlace(id: string) {
-    return this.places.pipe(take(1), map(places => {
-      return {...places.find(place => place.id === id)};
-    }));
+    return this.http
+      .get<PlaceData>(
+        `https://places-ion.firebaseio.com/offers/${id}.json`
+      )
+      .pipe(
+        map(placeData => {
+          return new Place(
+            id,
+            placeData.title,
+            placeData.description,
+            placeData.imageUrl,
+            placeData.price,
+            new Date(placeData.availableFrom),
+            new Date(placeData.availableTo),
+            placeData.userId
+          );
+        })
+      );
   }
 
-  addPlace(title: string, description: string, price: number, dateFrom: Date, dateTo: Date, userId: string) {
-    // tslint:disable-next-line: max-line-length
-    const newPlace = new Place(Math.random().toString(), title, description, 'https://cdn.getyourguide.com/img/tour_img-2980306-146.jpg', price, dateFrom, dateTo, userId);
-
-    this.places.pipe(take(1)).subscribe( places => {
-      this.places.next(places.concat(newPlace));
-    });
+  addPlace(
+    title: string,
+    description: string,
+    price: number,
+    dateFrom: Date,
+    dateTo: Date
+  ) {
+    let generatedId: string;
+    const newPlace = new Place(
+      Math.random().toString(),
+      title,
+      description,
+      'https://lonelyplanetimages.imgix.net/mastheads/GettyImages-538096543_medium.jpg?sharp=10&vib=20&w=1200',
+      price,
+      dateFrom,
+      dateTo,
+      this.authService.userId
+    );
+    return this.http
+      .post<{ name: string }>(
+        'https://places-ion.firebaseio.com/offers.json',
+        {
+          ...newPlace,
+          id: null
+        }
+      )
+      .pipe(
+        switchMap(resData => {
+          generatedId = resData.name;
+          return this.places;
+        }),
+        take(1),
+        tap(places => {
+          newPlace.id = generatedId;
+          this._places.next(places.concat(newPlace));
+        })
+      );
+    // return this.places.pipe(
+    //   take(1),
+    //   delay(1000),
+    //   tap(places => {
+    //     this._places.next(places.concat(newPlace));
+    //   })
+    // );
   }
 
-  editPlace(placeId: string, title: string, description: string ) {
-    return this.places.pipe(take(1), delay(1500), tap(places => {
-      const oldPlaceIndex = places.findIndex(pl => pl.id === placeId);
-      const oldPlace = places[oldPlaceIndex];
-      const updatedPlaces = [...places];
-      // tslint:disable-next-line: max-line-length
-      updatedPlaces[oldPlaceIndex] = new Place(oldPlace.id, title, description, oldPlace.imageUrl, oldPlace.price, oldPlace.availableFrom, oldPlace.availableTo, oldPlace.userId);
-      this.places.next(updatedPlaces);
-    }));
+  updatePlace(placeId: string, title: string, description: string) {
+    let updatedPlaces: Place[];
+    return this.places.pipe(
+      take(1),
+      switchMap(places => {
+        if (!places || places.length <= 0) {
+          return this.fetchPlaces();
+        } else {
+          return of(places);
+        }
+      }),
+      switchMap(places => {
+        const updatedPlaceIndex = places.findIndex(pl => pl.id === placeId);
+        updatedPlaces = [...places];
+        const oldPlace = updatedPlaces[updatedPlaceIndex];
+        updatedPlaces[updatedPlaceIndex] = new Place(
+          oldPlace.id,
+          title,
+          description,
+          oldPlace.imageUrl,
+          oldPlace.price,
+          oldPlace.availableFrom,
+          oldPlace.availableTo,
+          oldPlace.userId
+        );
+        return this.http.put(
+          `https://places-ion.firebaseio.com/offers/${placeId}.json`,
+          { ...updatedPlaces[updatedPlaceIndex], id: null }
+        );
+      }),
+      tap(() => {
+        this._places.next(updatedPlaces);
+      })
+    );
   }
 }

@@ -1,8 +1,0 @@
-{
-  "appId": "placesIon",
-  "appName": "places-ion",
-  "bundledWebRuntime": false,
-  "npmClient": "npm",
-  "webDir": "www",
-  "cordova": {}
-}

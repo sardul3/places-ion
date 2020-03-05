@@ -1,41 +1,58 @@
-import { AuthService } from './../../auth/auth.service';
-import { PlacesService } from './../places.service';
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { Place } from '../place.model';
+import { MenuController } from '@ionic/angular';
 import { SegmentChangeEventDetail } from '@ionic/core';
 import { Subscription } from 'rxjs';
+
+import { PlacesService } from '../places.service';
+import { Place } from '../place.model';
+import { AuthService } from '../../auth/auth.service';
 
 @Component({
   selector: 'app-discover',
   templateUrl: './discover.page.html',
-  styleUrls: ['./discover.page.scss'],
+  styleUrls: ['./discover.page.scss']
 })
 export class DiscoverPage implements OnInit, OnDestroy {
-  places: Place[];
-  relPlaces: Place[];
-  placesSub: Subscription;
-  constructor(private placesService: PlacesService,
-              private authService: AuthService) { }
+  loadedPlaces: Place[];
+  listedLoadedPlaces: Place[];
+  relevantPlaces: Place[];
+  isLoading = false;
+  private placesSub: Subscription;
+
+  constructor(
+    private placesService: PlacesService,
+    private menuCtrl: MenuController,
+    private authService: AuthService
+  ) {}
 
   ngOnInit() {
-    this.placesSub = this.placesService.getPlaces().subscribe(places => {
-      this.places = places;
-      this.relPlaces = this.places;
+    this.placesSub = this.placesService.places.subscribe(places => {
+      this.loadedPlaces = places;
+      this.relevantPlaces = this.loadedPlaces;
+      this.listedLoadedPlaces = this.relevantPlaces.slice(1);
     });
   }
 
-  onSegmentChange(event: CustomEvent<SegmentChangeEventDetail>) {
-    console.log(event.detail);
-    console.log(this.relPlaces);
+  ionViewWillEnter() {
+    this.isLoading = true;
+    this.placesService.fetchPlaces().subscribe(() => {
+      this.isLoading = false;
+    });
+  }
 
+  onOpenMenu() {
+    this.menuCtrl.toggle();
+  }
+
+  onFilterUpdate(event: CustomEvent<SegmentChangeEventDetail>) {
     if (event.detail.value === 'all') {
-      this.relPlaces = this.places;
-    }
-    if (event.detail.value === 'bookable') {
-      const filteredPlaces = [...this.places].filter(place => {
-        return place.userId !== this.authService.getUserId();
-      });
-      this.relPlaces = filteredPlaces;
+      this.relevantPlaces = this.loadedPlaces;
+      this.listedLoadedPlaces = this.relevantPlaces.slice(1);
+    } else {
+      this.relevantPlaces = this.loadedPlaces.filter(
+        place => place.userId !== this.authService.userId
+      );
+      this.listedLoadedPlaces = this.relevantPlaces.slice(1);
     }
   }
 
@@ -44,5 +61,4 @@ export class DiscoverPage implements OnInit, OnDestroy {
       this.placesSub.unsubscribe();
     }
   }
-
 }

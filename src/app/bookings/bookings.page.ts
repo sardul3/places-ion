@@ -1,42 +1,43 @@
-import { IonItemSliding, LoadingController } from '@ionic/angular';
-import { BookingsService } from './bookings.service';
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { Booking } from './booking.model';
-import { Router } from '@angular/router';
+import { IonItemSliding, LoadingController } from '@ionic/angular';
 import { Subscription } from 'rxjs';
+
+import { BookingService } from './booking.service';
+import { Booking } from './booking.model';
 
 @Component({
   selector: 'app-bookings',
   templateUrl: './bookings.page.html',
-  styleUrls: ['./bookings.page.scss'],
+  styleUrls: ['./bookings.page.scss']
 })
 export class BookingsPage implements OnInit, OnDestroy {
-  bookings: Booking[];
-  bookingsSub: Subscription;
-  constructor(private bookingsService: BookingsService,
-              private router: Router,
-              private loadingController: LoadingController) { }
+  loadedBookings: Booking[];
+  private bookingSub: Subscription;
+
+  constructor(
+    private bookingService: BookingService,
+    private loadingCtrl: LoadingController
+  ) {}
 
   ngOnInit() {
-   this.bookingsSub = this.bookingsService.getBookings().subscribe(bookings => {
-     this.bookings = bookings;
-   });
+    this.bookingSub = this.bookingService.bookings.subscribe(bookings => {
+      this.loadedBookings = bookings;
+    });
   }
 
-  onBookingDelete(bookingId: string, selectedBooking: IonItemSliding) {
-    this.loadingController.create({message: 'deleting booking..'}).then(loadingEl => {
-      selectedBooking.close();
+  onCancelBooking(bookingId: string, slidingEl: IonItemSliding) {
+    slidingEl.close();
+    this.loadingCtrl.create({ message: 'Cancelling...' }).then(loadingEl => {
       loadingEl.present();
-      this.bookingsService.deleteBooking(bookingId).subscribe(bookings => {
+      this.bookingService.cancelBooking(bookingId).subscribe(() => {
         loadingEl.dismiss();
       });
-      });
+    });
   }
 
   ngOnDestroy() {
-    if (this.bookingsSub) {
-      this.bookingsSub.unsubscribe();
+    if (this.bookingSub) {
+      this.bookingSub.unsubscribe();
     }
   }
-
 }
